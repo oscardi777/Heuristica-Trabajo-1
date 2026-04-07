@@ -2,7 +2,6 @@ import os
 import math
 import time
 import pandas as pd
-import bisect
 
 
 # ─────────────────────────────────────────────
@@ -39,35 +38,24 @@ class Job:
         self.release = release
 
 # ─────────────────────────────────────────────
-# ESTRUCTURA MACHINE PARA PROGRAMACIÓN PRECISA (de V5)
+# ESTRUCTURA MACHINE SIMPLIFICADA
 # ─────────────────────────────────────────────
 class Machine:
-    __slots__ = ("id", "begins", "ends", "max_end_prefix")
-
     def __init__(self, id: int):
         self.id = id
-        self.begins: list[int] = []
-        self.ends: list[int] = []
-        self.max_end_prefix: list[int] = []
+        self.intervals: list[tuple[int, int]] = []   # (begin, end)
 
     def add(self, b: int, e: int) -> None:
-        idx = bisect.bisect_right(self.begins, b)
-        self.begins.insert(idx, b)
-        self.ends.insert(idx, e)
-        if idx == len(self.begins) - 1:
-            prev = self.max_end_prefix[idx - 1] if idx > 0 else 0
-            self.max_end_prefix.append(max(prev, e))
-        else:
-            self.max_end_prefix = []
-            running = 0
-            for ek in self.ends:
-                running = max(running, ek)
-                self.max_end_prefix.append(running)
+        """Añade un intervalo (no necesita orden)."""
+        self.intervals.append((b, e))
 
     def max_end_before(self, threshold: int) -> int:
-        idx = bisect.bisect_left(self.begins, threshold)
-        return self.max_end_prefix[idx - 1] if idx > 0 else 0
-
+        """Devuelve el mayor 'end' de cualquier operación cuyo 'begin' < threshold."""
+        max_e = 0
+        for b, e in self.intervals:
+            if b < threshold:
+                max_e = max(max_e, e)
+        return max_e
 
 # ─────────────────────────────────────────────
 # LECTURA DE INSTANCIAS
